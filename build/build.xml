@@ -1,0 +1,187 @@
+<?xml version="1.0" ?>
+<project name="JAFW" default="all" basedir="..">
+	<description>This is a build file for JAFW Util a file watcher</description>
+	<!-- ======================================================== -->
+	<!-- Properties                                               -->
+	<!-- ======================================================== -->
+	<!-- ***** General ***** -->
+	<property name="src" value="src" />
+	<property name="build_results" value="build_results" />
+	<property name="classes" value="${build_results}/classes" />
+	<property name="build" value="build" />
+	<property name="tools" value="${build}/tools" />
+	<property name="conf" value="${build}/conf" />
+	<property name="build_results" value="build_results" />
+	<property name="JAFW_DEV" value="${basedir}" />
+	<property name="debug.flag" value="on" />
+	<property name="deprecation" value="off" />
+	<property name="javac.list" value="false" />
+	<property name="include" value="${build}/include" />
+	<property name="exclude" value="${build}/exclude" />
+
+
+	<!-- ***** Jar ***** -->
+	<property name="jars" value="${build_results}/jars" />
+	<property name="thirdpartyjars" value="jars/3rdparty" />
+	<property name="classpath.jars" value="${thirdpartyjars}" />
+	<property name="manifests" value="jars/manifests" />
+	<property name="jar_list_dir" value="${build}/jar_buildfiles" />
+	<property name="jar_list" value="**" />
+
+
+
+	<!-- ***** Docs ***** -->
+	<property name="docs" value="${build_results}/docs" />
+	<property name="WINDOWTITLE" value="JAFW" />
+	<property name="DOCTITLE" value="JAFW Java Docs" />
+	<property name="HEADER" value="JAFW Installer" />
+	<!-- ***** Tests ***** -->
+	<property name="junit.timeout" value="150000" />
+	<property name="reports" value="${build_results}/reports" />
+	<property name="test.prop.location" value="islamabad" />
+	<property name="test.prop.file" value="${conf}/${test.prop.location}.test.props" />
+	<property name="testDataDir" value="testData" />
+	<property name="testoutput" value="${build_results}/tests" />
+	<property name="reportdir" value="${testoutput}" />
+	<property name="tests.include" value="${build}/tests_include" />
+	<property name="tests.exclude" value="${build}/tests_exclude" />
+
+
+	<path id="JAFW.classpath">
+		<fileset dir="${classpath.jars}">
+			<include name="**/*.jar" />
+			<include name="**/*.zip" />
+		</fileset>
+		<fileset dir="${java.home}/lib">
+			<include name="javaws.jar" />
+		</fileset>
+	</path>
+
+
+	<taskdef resource="net/sf/antcontrib/antcontrib.properties">
+		<classpath>
+			<pathelement location="${tools}/ant-contrib/ant-contrib-0.2.jar" />
+		</classpath>
+	</taskdef>
+	<property name="build.classpath" refid="JAFW.classpath" />
+
+
+	<!-- Delete all build output -->
+	<target name="clean" description="removes some build_results subdirectories to clean up">
+		<echo message="removing ${build_results} subdirectories" />
+		<delete dir="${classes}" />
+		<delete dir="${jars}" />
+		<delete dir="${testoutput}" />
+		<delete dir="${reports}" />
+		<delete dir="${docs}" />
+	</target>
+	
+	
+	<!-- Create build_results output directories -->
+	<target name="init" description="creates the directories needed for build_results">
+		<echo message="creating ${build_results} output directories" />
+		<tstamp>
+			<format property="man-date" pattern="E dd MMM yyyy hh:mm:ss aa z" locale="EN" />
+		</tstamp>
+		<mkdir dir="${build_results}" />
+		<mkdir dir="${classes}" />
+		<mkdir dir="${docs}" />
+		<mkdir dir="${jars}" />
+		<mkdir dir="${testoutput}" />
+		<mkdir dir="${reports}" />
+	</target>
+	
+	
+	<!-- Compile the source -->
+	<target name="compileonly" depends="init" description="compile the source">
+		<echo message="compiling source code in ${src}" />
+		<javac srcdir="${src}" destdir="${classes}" listfiles="${javac.list}" debug="${debug.flag}" nowarn="on" debuglevel="lines,source" includesfile="${include}" excludesfile="${exclude}" deprecation="${deprecation}" classpathref="JAFW.classpath" target="1.5">
+		</javac>
+	</target>
+	
+	
+	<target name="clean_notest" description="removes build_results subdirectories except tests">
+		<echo message="removing ${build_results} subdirectories" />
+		<delete dir="${classes}" />
+		<delete dir="${jars}" />
+	</target>
+	
+	
+	<!-- foreach loop to create all the jars -->
+	<target name="jaronly" depends="init" description="create the jars by calling a foreach task">
+		<echo message="creating all jars matching the pattern ${jar_list} under ${jar_list_dir}" />
+		<foreach target="buildjar" param="var" delimiter=",">
+			<path>
+				<fileset dir="${jar_list_dir}">
+					<include name="${jar_list}" />
+				</fileset>
+			</path>
+		</foreach>
+	</target>
+	
+	
+	<target name="buildjar" description="create the jars">
+		<loadproperties srcfile="${var}" />
+		<tstamp>
+			<format property="man-date" pattern="E dd MMM yyyy hh:mm:ss aa z" locale="EN" />
+		</tstamp>
+		<basename property="jar_filename" file="${var}" />
+		<jar destfile="${jars}/${jar_filename}" basedir="${classes}" includes="${JAR_CONTENT}" excludes="**/test/**" manifest="jars/manifests/${MANIFEST}" filesonly="true">
+			<manifest>
+				<attribute name="Create-Time" value="${man-date}" />
+			</manifest>
+		</jar>
+	</target>
+	
+	
+	<!-- create the docs -->
+	<target name="javadoc" depends="compileonly" description="creates java docs">
+		<delete dir="${docs}" />
+		<mkdir dir="${docs}" />
+		<echo message="creating java docs" />
+		<javadoc sourcepath="${src}" packagenames="net.JAFW.install.*" Verbose="false" maxmemory="512m" link="http://java.sun.com/j2se/1.5.0/docs/api/" destDir="${docs}" Windowtitle="${WINDOWTITLE}" doctitle="${DOCTITLE}" use="true" stylesheetfile="${tools}/styles/stylesheet.css" footer="JAFW - One more installer.">
+			<classpath refid="JAFW.classpath" />
+			<tag name="email" scope="all" description="Email:" />
+		</javadoc>
+	</target>
+	
+	
+	<!-- run junit tests -->
+	<!-- forkmode="perTest" -->
+
+	 <target name="tests" depends="compileonly" description="runs JUnit tests" >
+	    <echo message="running JUnit tests" />
+	    <junit printsummary="on" dir=".." haltonfailure="off" haltonerror="off" timeout="${junit.timeout}" fork="on" maxmemory="512m" showoutput="true">
+	      <formatter type="plain" usefile="false"/>
+	      <formatter type="xml" usefile="true"/>
+	      <batchtest todir="${testoutput}" filtertrace="off">
+	        <fileset dir="${src}">
+	          <includesfile name="${tests.include}"/>
+	          <excludesfile name="${tests.exclude}"/>
+	        </fileset>
+	      </batchtest>
+	      <classpath>
+	        <pathelement path="${classes}"/>
+	        <pathelement path="${build.classpath}"/>
+	      </classpath>
+	    </junit>
+
+	 <echo message="running JUnit Reports"/>
+	   <junitreport todir="${reports}">
+	      <fileset dir="${reportdir}">
+	        <include name="Test*.xml"/>
+	      </fileset>
+	      <report format="frames" todir="${reports}"/>
+	    </junitreport>
+	    <echo message="To see your Junit results, please open ${reports}/index.html}"/>
+	  </target>
+
+	<target name="compile" depends="init,compileonly" />
+	<target name="jar" depends="jaronly" />
+	<target name="do_javadoc" depends="javadoc" />
+	<target name="build_test" depends="clean,compile,jar,tests" />
+	<target name="build_notest" depends="clean,compile,jar" />
+	<target name="all" depends="clean,compile,jar" />
+	<target name="do_nightly" depends="all" />
+	<target name="hourly" depends="build_notest" />
+</project>

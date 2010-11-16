@@ -1,0 +1,9 @@
+HOW-TO
+
+to build
+
+set env JAFW_DEV to the root of the project
+
+build/bin/build.sh
+
+or ant -f build/build.xml
